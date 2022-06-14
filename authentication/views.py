@@ -1,22 +1,27 @@
+from django.http import JsonResponse
 from django.shortcuts import render
-from django.contrib.admin.views.decorators import staff_member_required
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from . import models
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.authtoken.models import Token
+from .serializers import AuthenticationSerializer
 
 
 # Create your views here.
 
 def index(request):
     return render(request, 'vue-test.html')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def is_user_authenticated(request):
+    return JsonResponse({
+        'active': request.user.is_active,
+    })
 
 
 @csrf_exempt
@@ -29,9 +34,7 @@ def login_user(request):
         token = None
         # refresh = None
         if user is not None and user.is_active:
-            # A backend authenticated the credentials
             login(request, user)
-            # refresh = RefreshToken.for_user(user)
             try:
                 token = Token.objects.get(user_id=user.id)
 
@@ -39,7 +42,6 @@ def login_user(request):
                 token = Token.objects.create(user=user)
             authenticated = True
         else:
-            # No backend authenticated the credentials
             authenticated = False
         return JsonResponse({
             'user': {
@@ -49,8 +51,6 @@ def login_user(request):
                 'last_name': user_object.last_name,
                 'token': token.key,
                 'authenticated': authenticated,
-                # 'access_token': refresh.access_token,
-                # 'refresh': refresh,
             },
         })
     else:
@@ -85,14 +85,23 @@ def get_user_details(request):
 
 @csrf_exempt
 def register(request):
-    user = User.objects.create_user('john', 'lennon@thebeatles.com', 'johnpassword')
-    user.first_name = 'Lennon'
-    user.last_name = 'Bruce'
-    user.save()
-    return JsonResponse({
-        'registered': True,
-        'user': user
-    })
+    if request.method == "POST":
+        data = JSONParser().parse(request)
+        # instantiate with the serializer
+        serializer = AuthenticationSerializer(data=data)
+        # check if the sent information is okay
+        if serializer.is_valid():
+            # if okay, save it on the database
+            serializer.save()
+            # provide a Json Response with the data that was saved
+            return JsonResponse(serializer.data, status=201)
+            # provide a Json Response with the necessary error information
+        return JsonResponse(serializer.errors, status=400)
+    # user = User.objects.create_user('john', 'lennon@thebeatles.com', 'johnpassword')
+    # user.first_name = 'Lennon'
+    # user.last_name = 'Bruce'
+    # user.save()
+    return JsonResponse({'registered': False}, status=404)
 
 
 @api_view(['POST'])
