@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import AccidentSerializer
 # Task model
 from .models import Accident
+import requests
 
 
 # Create your views here.
@@ -48,6 +49,14 @@ def accidents(request):
         data = JSONParser().parse(request)
         # instantiate with the serializer
         serializer = AccidentSerializer(data=data)
+        resp = requests.get('https://api.openweathermap.org/data/2.5/weather?lat={:}&lon={:}&appid=982f10ff7ca1c9e0e90500c0f166c018&units=metric'.format(serializer.data.lat, serializer.data.long)).json()
+        serializer.data.temp = resp['main']['temp']
+        serializer.data.pressure = resp['main']['pressure']
+        serializer.data.humidity = resp['main']['humidity']
+        serializer.data.visibility = resp['visibility']
+        serializer.data.wind_speed = resp['wind']['speed']
+        serializer.data.clouds = resp['clouds']['all']
+        serializer.data.weather_description = resp['weather'][0]['description']
         # check if the sent information is okay
         if serializer.is_valid():
             # if okay, save it on the database
