@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import JSONParser
@@ -13,8 +13,8 @@ from .models import MyUser, Profile
 # Create your views here.
 
 def index(request):
-    return render(request, 'vue-test.html')
-
+    # return render(request, 'vue-test.html')
+    return HttpResponse("You are viewing our homepage! Hahahaha...")
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

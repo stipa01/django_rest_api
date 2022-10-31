@@ -8,6 +8,7 @@ class MyUser(AbstractUser):
         verbose_name='email address',
         max_length=255,
         unique=True,
+        blank=False
     )
 
     USERNAME_FIELD = 'email'
